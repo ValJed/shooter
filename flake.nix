@@ -23,6 +23,9 @@
         openssl
       ];
       LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
+      shellHook = ''
+        exec zsh
+      '';
     };
   };
 }
