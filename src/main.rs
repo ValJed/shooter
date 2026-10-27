@@ -3,10 +3,8 @@ use bevy::prelude::*;
 use bevy::window::{CursorGrabMode, CursorOptions, PrimaryWindow};
 use bevy_rapier3d::prelude::*;
 
+const SPEED: f32 = 5.0;
 const MAX_JUMP: u8 = 2;
-
-#[derive(Component, Default)]
-struct Velocity(Vec3);
 
 #[derive(Component)]
 struct Player;
@@ -96,33 +94,34 @@ fn main() {
 
 fn move_player(
     keys: Res<ButtonInput<KeyCode>>,
-    time: Res<Time>,
-    mut query: Query<(&mut Transform, &mut PlayerCamera), With<Player>>,
+    mut query: Query<(&Transform, &mut Velocity), With<Player>>,
 ) {
-    // if let Ok(mut camera) = query.single_mut() {
-    //     tf.rotate_y(-delta.x * sensitivity);
-    // }
-    println!("keys: {:?}", keys);
-    let mut dir = Vec3::ZERO;
+    let Ok((tf, mut vel)) = query.single_mut() else {
+        return;
+    };
+
+    let mut input = Vec2::ZERO;
     if Action::Forward.pressed(&keys) {
-        dir.z -= 1.0
+        input.y += 1.0
     }
     if Action::Back.pressed(&keys) {
-        dir.z += 1.0
+        input.y -= 1.0
     }
     if Action::Right.pressed(&keys) {
-        dir.x += 1.0
+        input.x += 1.0
     }
     if Action::Left.pressed(&keys) {
-        dir.x -= 1.0
+        input.x -= 1.0
     }
     if Action::Jump.pressed(&keys) {
         info!("jump")
     }
 
-    for mut transform in &mut query {
-        transform.translation += dir.normalize_or_zero() * 3.0 * time.delta_secs();
-    }
+    let local = Vec3::new(input.x, 0.0, -input.y).normalize_or_zero() * SPEED;
+    let world = tf.rotation * local;
+
+    vel.linear.x = world.x;
+    vel.linear.z = world.z;
 }
 
 fn add_player(
