@@ -1,6 +1,6 @@
 use bevy::input::mouse::MouseMotion;
 use bevy::prelude::*;
-use bevy::window::{CursorGrabMode, CursorOptions, PrimaryWindow};
+use bevy::window::{CursorGrabMode, CursorOptions};
 use bevy_rapier3d::prelude::*;
 
 const SPEED: f32 = 5.0;
@@ -12,7 +12,7 @@ struct Player;
 #[derive(Component, Default, Clone)]
 struct PlayerCamera;
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 struct Jumps {
     is_jumping: bool,
     remaining: u8,
@@ -25,25 +25,28 @@ impl Jumps {
             remaining: MAX_JUMP,
         }
     }
-    fn start_jump(
-        mut commands: Commands,
-        time: Res<Time>,
-        mut query: Query<(&mut Transform, &mut Jumps, &mut Velocity), With<Player>>,
-    ) {
-        let Ok((mut transform, mut jumps, mut velocity)) = query.single_mut() else {
-            return;
-        };
 
-        if jumps.remaining == 0 {
-            return;
+    fn start_jump(&mut self) -> bool {
+        let can_jump = self.can_jump();
+        println!("can_jump: {:?}", can_jump);
+        if !self.can_jump() {
+            return false;
         }
 
-        jumps.is_jumping = true;
-        jumps.remaining -= 1;
-        // velocity.from_xyz = 1.0;
+        self.is_jumping = true;
+        self.remaining -= 1;
+
+        true
     }
 
-    fn can_jump() {}
+    fn can_jump(&self) -> bool {
+        self.remaining > 0
+    }
+
+    fn land(&mut self) {
+        self.is_jumping = false;
+        self.remaining = MAX_JUMP;
+    }
 }
 
 #[derive(Component)]
@@ -73,9 +76,9 @@ impl Action {
         keys.any_pressed(self.keys().iter().copied())
     }
 
-    // fn just_pressed(self, keys: &ButtonInput<KeyCode>) -> bool {
-    //     keys.any_just_pressed(self.keys().iter().copied())
-    // }
+    fn just_pressed(self, keys: &ButtonInput<KeyCode>) -> bool {
+        keys.any_just_pressed(self.keys().iter().copied())
+    }
 }
 
 fn main() {
@@ -89,14 +92,15 @@ fn main() {
         .add_systems(Update, move_player)
         .add_systems(Update, look)
         .add_systems(Update, toggle_cursor)
+        .add_systems(Update, jump_system)
         .run();
 }
 
 fn move_player(
     keys: Res<ButtonInput<KeyCode>>,
-    mut query: Query<(&Transform, &mut Velocity), With<Player>>,
+    mut query: Query<(&Transform, &mut Velocity, &mut Jumps), With<Player>>,
 ) {
-    let Ok((tf, mut vel)) = query.single_mut() else {
+    let Ok((tf, mut vel, mut jumps)) = query.single_mut() else {
         return;
     };
 
@@ -113,8 +117,10 @@ fn move_player(
     if Action::Left.pressed(&keys) {
         input.x -= 1.0
     }
-    if Action::Jump.pressed(&keys) {
-        info!("jump")
+    if Action::Jump.just_pressed(&keys) {
+        if jumps.start_jump() {
+            vel.linear.y = 5.0;
+        }
     }
 
     let local = Vec3::new(input.x, 0.0, -input.y).normalize_or_zero() * SPEED;
@@ -149,8 +155,8 @@ fn add_player(
     ));
 }
 
-fn set_cursor(mut cursor: Query<&mut CursorOptions>) {
-    let Ok(mut cursor) = cursor.single_mut() else {
+fn set_cursor(mut query: Query<&mut CursorOptions>) {
+    let Ok(mut cursor) = query.single_mut() else {
         return;
     };
     cursor.grab_mode = CursorGrabMode::Locked;
@@ -202,7 +208,24 @@ fn look(
     }
 }
 
-fn player_jump(mut commands: Commands) {}
+fn jump_system(
+    mut commands: Commands,
+    mut query: Query<(&mut Velocity, &mut Jumps), With<Player>>,
+) {
+    let Ok((mut vel, mut jumps)) = query.single_mut() else {
+        return;
+    };
+    if !jumps.is_jumping {
+        return;
+    }
+
+    println!("vel in jump system: {:?}", vel);
+
+    if vel.linear.y == 0.0 {
+        println!("LANDING");
+        jumps.land()
+    }
+}
 
 /// set up a simple 3D scene
 fn arena() -> impl SceneList {
