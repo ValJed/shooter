@@ -1,11 +1,14 @@
+use std::f32::consts::PI;
+
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
-use super::{Jumps, Player, PlayerCamera, PlayerName};
+use super::{Gun, Jumps, Player, PlayerCamera, PlayerName};
 
 pub fn add_player(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
+    mut asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     commands.spawn((
@@ -24,6 +27,20 @@ pub fn add_player(
             Camera3d::default(),
             PlayerCamera,
             Transform::from_xyz(0.0, 0.6, -0.2),
+            children![render_gun(&asset_server)]
         )],
     ));
+}
+
+pub fn render_gun(asset_server: &AssetServer) -> impl Bundle {
+    (
+        Name("Gun".into()),
+        Gun,
+        WorldAssetRoot(
+            asset_server.load(GltfAssetLabel::Scene(0).from_asset("models/gun/scene.gltf")),
+        ),
+        Transform::from_xyz(0.25, -0.2, -0.5)
+            .with_rotation(Quat::from_rotation_y(PI))
+            .with_scale(Vec3::splat(0.5)),
+    )
 }
