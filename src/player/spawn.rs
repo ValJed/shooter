@@ -39,8 +39,8 @@ pub fn render_gun(asset_server: &AssetServer) -> impl Bundle {
         WorldAssetRoot(
             asset_server.load(GltfAssetLabel::Scene(0).from_asset("models/gun/scene.gltf")),
         ),
-        Transform::from_xyz(0.25, -0.2, -0.5)
-            .with_rotation(Quat::from_rotation_y(PI))
-            .with_scale(Vec3::splat(0.5)),
+        Transform::from_xyz(0.2, -0.2, -0.5)
+            .with_rotation(Quat::from_euler(EulerRot::XYZ, -3.3, 1.5, -3.1))
+            .with_scale(Vec3::new(1.0, 0.5, 0.5)),
     )
 }

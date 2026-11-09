@@ -31,8 +31,8 @@ impl Plugin for PlayerPlugin {
         app.add_systems(Startup, add_player)
             .add_systems(Update, move_player)
             .add_systems(Update, look)
-            .add_systems(Update, jump_system);
-        // .add_systems(Update, toggle_cursor)
-        // .add_systems(Startup, set_cursor);
+            .add_systems(Update, jump_system)
+            .add_systems(Update, toggle_cursor)
+            .add_systems(Startup, set_cursor);
     }
 }

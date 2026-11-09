@@ -16,10 +16,10 @@
         vulkan-loader
         wayland
         libxkbcommon
-        xorg.libX11
-        xorg.libXcursor
-        xorg.libXi
-        xorg.libXrandr
+        libx11
+        libxcursor
+        libxi
+        libxrandr
         openssl
       ];
       LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
